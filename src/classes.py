@@ -40,6 +40,16 @@ class Product:
         self.__price = price
         self.quantity = quantity
 
+    def __str__(self):
+        return (f'{self.name}, {self.price} руб. '
+                f'Остаток: {self.quantity} шт.\n')
+
+    def __add__(self, addend):
+        total = (self.price * self.quantity) + (addend.price * addend.quantity)
+        if total % 1 == 0:
+            return int(total)
+        return total
+
     @property
     def price(self):
         """float: Возвращает текущую цену продукта."""
@@ -124,13 +134,16 @@ class Category:
         Category.category_count += 1
         Category.product_count += len(products)
 
+    def __str__(self):
+        total = 0
+        for product in self.__products:
+            total += product.quantity
+        return f'{self.name}, количество продуктов: {total} шт.'
+
     @property
     def products(self):
         return "".join(
-            f"{product.name}, "
-            f"{product.price} руб. "
-            f"Остаток: {product.quantity} шт.\n"
-            for product in self.__products
+            str(product) for product in self.__products
         )
 
     def add_product(self, product):
