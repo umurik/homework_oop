@@ -14,7 +14,8 @@ dependencies = [
     "pytest-cov (>=7.1.0,<8.0.0)",
     "pytest (>=9.1.1,<10.0.0)"
 ]
-
+[tool.coverage.run]
+omit = ["src/main.py"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
