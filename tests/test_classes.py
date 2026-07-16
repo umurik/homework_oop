@@ -113,3 +113,14 @@ def test_new_product_errors_product():
         product_dict["quantity"] = -1
         Product.new_product(product_dict)
     assert "Количество не может быть отрицательным" in str(exc_info.value)
+
+def test_add_product(product):
+    total = product + product
+    assert total == 1800000
+
+def test_str_product(product):
+    assert str(product) == ("Samsung Galaxy S23 Ultra, "
+                            "180000.0 руб. Остаток: 5 шт.\n")
+def test_str_category(product):
+    cat = Category('name', 'description', [product, product])
+    assert str(cat) == "name, количество продуктов: 10 шт."
