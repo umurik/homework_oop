@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.classes import Category, Product
+from src.classes import Category, LawnGrass, Product, Smartphone
 
 
 @pytest.fixture(autouse=True)
@@ -15,6 +15,26 @@ def reset_category_counters():
 @pytest.fixture
 def product():
     return Product("Samsung Galaxy S23 Ultra", "256GB, Серый", 180000.0, 5)
+
+
+@pytest.fixture
+def phone():
+    return Smartphone(
+        "new_phone", "new_description", 1501, 12, 4444, "S24", 256, "яблочный"
+    )
+
+
+@pytest.fixture
+def grass1():
+    return LawnGrass(
+        "Газонная трава",
+        "Элитная трава для газона",
+        500.0,
+        20,
+        "Россия",
+        "7 дней",
+        "Зеленый",
+    )
 
 
 def test_product_fields(product):
@@ -31,7 +51,7 @@ def test_category_fields(product):
     assert category.description == "описание"
     assert (
         category.products == "Samsung Galaxy S23 Ultra, "
-                             "180000.0 руб. Остаток: 5 шт.\n"
+        "180000.0 руб. Остаток: 5 шт.\n"
     )
     assert category_empty.name == "Empty"
     assert category_empty.description == "None"
@@ -98,8 +118,7 @@ def test_new_product_product(product):
 
 
 def test_new_product_errors_product():
-    product_dict = {"description": "some_description",
-                    "price": 10, "quantity": 12}
+    product_dict = {"description": "some_description", "price": 10, "quantity": 12}
     with pytest.raises(KeyError) as exc_info:
         Product.new_product(product_dict)
     assert "Ключ name отсутствует в словаре" in str(exc_info.value)
@@ -114,13 +133,45 @@ def test_new_product_errors_product():
         Product.new_product(product_dict)
     assert "Количество не может быть отрицательным" in str(exc_info.value)
 
+
 def test_add_product(product):
     total = product + product
     assert total == 1800000
 
+
 def test_str_product(product):
-    assert str(product) == ("Samsung Galaxy S23 Ultra, "
-                            "180000.0 руб. Остаток: 5 шт.\n")
+    assert str(product) == (
+        "Samsung Galaxy S23 Ultra, " "180000.0 руб. Остаток: 5 шт.\n"
+    )
+
+
 def test_str_category(product):
-    cat = Category('name', 'description', [product, product])
+    cat = Category("name", "description", [product, product])
     assert str(cat) == "name, количество продуктов: 10 шт."
+
+
+def test_smartphones(phone):
+    assert "new_phone" == phone.name
+    assert "new_description" == phone.description
+    assert 1501 == phone.price
+    assert 12 == phone.quantity
+    assert 4444 == phone.efficiency
+    assert "S24" == phone.model
+    assert 256 == phone.memory
+    assert "яблочный" == phone.color
+
+
+def test_lawngrass(grass1):
+    assert "Газонная трава" == grass1.name
+    assert "Элитная трава для газона" == grass1.description
+    assert 500.0 == grass1.price
+    assert 20 == grass1.quantity
+    assert "Россия" == grass1.country
+    assert "7 дней" == grass1.germination_period
+    assert "Зеленый" == grass1.color
+
+
+def test_add_bad_product(phone, grass1):
+    with pytest.raises(TypeError) as exc_info:
+        new_bad_thing = phone + grass1
+    assert "Невозможно сложить разные продукты!" == str(exc_info.value)
