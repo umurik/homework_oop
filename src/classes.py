@@ -1,65 +1,25 @@
 from __future__ import annotations
+from abc import ABC, abstractmethod
 
-
-class Product:
-    """Класс для продуктов.
-
-    Класс предназначен для хранения и обработки информации о продукте.
-
-    Attributes:
-        name (str): Имя продукта.
-        description (str): Описание продукта.
-        price (float): Цена продукта.
-        quantity (int): Количество продукта на складе.
-        color (str): Цвет продукта(необязателен).
-    """
-
+class BaseProduct(ABC):
     name: str
-    description: str
-    __price: float
     quantity: int
-    color: str | None
+    __price: float
 
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        price: float,
-        quantity: int,
-        color: str | None = None,
-    ):
-        """Инициализация продукта
-
-        Args:
-            name (str): Имя продукта.
-            description (str): Описание продукта.
-            price (float): Цена продукта.
-            quantity (int): Количество продукта на складе.
-            color (str | None): Цвет продукта.
-        """
-
+    @abstractmethod
+    def __init__(self, name, price, quantity):
         self.name = name
-        self.description = description
         self.__price = price
         self.quantity = quantity
-        self.color = color
 
     def __str__(self):
         return f"{self.name}, {self.price} руб. " f"Остаток: {self.quantity} шт.\n"
-
-    def __add__(self, addend):
-        if type(self) is not type(addend):
-            raise TypeError("Невозможно сложить разные продукты!")
-        total = (self.price * self.quantity) + (addend.price * addend.quantity)
-        if total % 1 == 0:
-            return int(total)
-        return total
 
     @property
     def price(self):
         """float: Возвращает текущую цену продукта."""
         return self.__price
-
+    
     @price.setter
     def price(self, price):
         """Устанавливает новую цену продукта.
@@ -83,6 +43,61 @@ class Product:
                 if user_input in ("Y", ""):
                     break
         self.__price = price
+
+class InfoMixin():
+    def __init__(self):
+        print(f"{self.__class__.__name__}('{self.name}', '{self.description}', '{self.price}', '{self.quantity}')")
+    
+
+
+class Product(BaseProduct, InfoMixin):
+    """Класс для продуктов.
+
+    Класс предназначен для хранения и обработки информации о продукте.
+
+    Attributes:
+        name (str): Имя продукта.
+        description (str): Описание продукта.
+        price (float): Цена продукта.
+        quantity (int): Количество продукта на складе.
+        color (str): Цвет продукта(необязателен).
+    """
+    description: str
+    color: str | None
+
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
+        color: str | None = None,
+    ):
+        """Инициализация продукта
+
+        Args:
+            name (str): Имя продукта.
+            description (str): Описание продукта.
+            price (float): Цена продукта.
+            quantity (int): Количество продукта на складе.
+            color (str | None): Цвет продукта.
+        """
+ 
+        super().__init__(name, price, quantity)
+        self.description = description
+        self.color = color
+        InfoMixin.__init__(self)
+
+
+    def __add__(self, addend):
+        if type(self) is not type(addend):
+            raise TypeError("Невозможно сложить разные продукты!")
+        total = (self.price * self.quantity) + (addend.price * addend.quantity)
+        if total % 1 == 0:
+            return int(total)
+        return total
+
 
     @classmethod
     def new_product(
@@ -150,33 +165,70 @@ class LawnGrass(Product):
         self.country = country
         self.germination_period = germination_period
 
+class BaseCategory(ABC): 
+    @abstractmethod
+    def __str__(self):
+        pass
 
-class Category:
+    @abstractmethod
+    def summ(self):
+        pass
+
+class Category(BaseCategory):
     name: str
     description: str
-    __products: list | None = None
+    __products: list[Product] | None = None
     category_count = 0
     product_count = 0
 
     def __init__(self, name: str, description: str, products: list[Product]):
         self.name = name
-        self.description = description
         self.__products = products
+        self.description = description
         Category.category_count += 1
         Category.product_count += len(products)
 
+    @property
+    def products(self):
+        return "".join(str(product) for product in self.__products)
+ 
     def __str__(self):
         total = 0
         for product in self.__products:
             total += product.quantity
         return f"{self.name}, количество продуктов: {total} шт."
 
-    @property
-    def products(self):
-        return "".join(str(product) for product in self.__products)
+    def summ(self):
+        total = 0
+        for product in self.__products:
+            total += product.price * product.quantity
+        return total
 
     def add_product(self, product):
         if not isinstance(product, Product):
             raise TypeError("Объект не является классом Product")
         Category.product_count += 1
         self.__products.append(product)
+
+
+class Order(BaseCategory):
+    quantity: int
+    amount: float
+    product: Product
+
+    def __init__(self, product, quantity):
+        self.product = product
+        self.quantity = quantity
+    
+    @property
+    def amount(self):
+        return self.summ()
+
+    def summ(self):
+        amount = self.quantity * self.product.price
+        if amount % 1 == 0:
+            return int(amount)
+        return amount
+    
+    def __str__(self):
+        return f'{self.product.name}, Цена: {self.product.price}, Сумма: {self.summ()}'

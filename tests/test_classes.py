@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.classes import Category, LawnGrass, Product, Smartphone
+from src.classes import Category, LawnGrass, Product, Smartphone, Order
 
 
 @pytest.fixture(autouse=True)
@@ -73,7 +73,8 @@ def test_setter_price_minus_product(capsys):
     product = Product("name", "description", -22, 1)
     product.price = -11
     captured = capsys.readouterr()
-    assert captured.out == "Цена не должна быть нулевой или отрицательной\n"
+    assert (captured.out == "Product('name', 'description', '-22', '1')\n"
+            "Цена не должна быть нулевой или отрицательной\n")
 
 
 def test_setter_decreasing_product(capsys):
@@ -175,3 +176,11 @@ def test_add_bad_product(phone, grass1):
     with pytest.raises(TypeError) as exc_info:
         new_bad_thing = phone + grass1
     assert "Невозможно сложить разные продукты!" == str(exc_info.value)
+
+def test_order(product):
+    new_order = Order(product, 123)
+    assert product == new_order.product
+    assert 123 == new_order.quantity
+    assert 22140000 == new_order.amount
+    assert 22140000 == new_order.summ()
+    assert "Samsung Galaxy S23 Ultra, Цена: 180000.0, Сумма: 22140000" == str(new_order)
