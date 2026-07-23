@@ -2,7 +2,8 @@ from unittest.mock import patch
 
 import pytest
 
-from src.classes import Category, LawnGrass, Product, Smartphone, Order
+from src.classes import (Category, CategoryException, LawnGrass, Order,
+                         Product, Smartphone)
 
 
 @pytest.fixture(autouse=True)
@@ -73,8 +74,10 @@ def test_setter_price_minus_product(capsys):
     product = Product("name", "description", -22, 1)
     product.price = -11
     captured = capsys.readouterr()
-    assert (captured.out == "Product('name', 'description', '-22', '1')\n"
-            "Цена не должна быть нулевой или отрицательной\n")
+    assert (
+        captured.out == "Product('name', 'description', '-22', '1')\n"
+        "Цена не должна быть нулевой или отрицательной\n"
+    )
 
 
 def test_setter_decreasing_product(capsys):
@@ -177,6 +180,7 @@ def test_add_bad_product(phone, grass1):
         new_bad_thing = phone + grass1
     assert "Невозможно сложить разные продукты!" == str(exc_info.value)
 
+
 def test_order(product):
     new_order = Order(product, 123)
     assert product == new_order.product
@@ -184,3 +188,29 @@ def test_order(product):
     assert 22140000 == new_order.amount
     assert 22140000 == new_order.summ()
     assert "Samsung Galaxy S23 Ultra, Цена: 180000.0, Сумма: 22140000" == str(new_order)
+
+
+def test_exceptions():
+    with pytest.raises(CategoryException) as exc_info:
+        me = Product("na", "w", "122", 12)
+        me.quantity = 0
+        Category("имя", "ьы", products=[me])
+    assert "Невозможно добавить товар с нулевым количеством!" == str(exc_info.value)
+
+    with pytest.raises(CategoryException) as exc_info:
+        me = Product("na", "w", "122", 12)
+        me.quantity = 0
+        Order(me, 122)
+    assert "Невозможно добавить товар с нулевым количеством!" == str(exc_info.value)
+
+    with pytest.raises(ValueError) as exc_info:
+        Product("smn", "description", 12212, 0)
+    assert "Товар с нулевым количеством не может быть добавлен!" == str(exc_info.value)
+
+
+def test_middle_price():
+    product1 = Product("m", "a", 12, 12)
+    cat1 = Category("n", "as", [product1])
+    assert 12 == cat1.middle_price()
+    cat2 = Category("n", "as", [])
+    assert 0 == cat2.middle_price()
