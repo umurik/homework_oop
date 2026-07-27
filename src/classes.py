@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
+
 
 class BaseProduct(ABC):
     name: str
@@ -10,6 +12,8 @@ class BaseProduct(ABC):
     def __init__(self, name, price, quantity):
         self.name = name
         self.__price = price
+        if quantity <= 0:
+            raise ValueError("Товар с нулевым количеством не может быть добавлен!")
         self.quantity = quantity
 
     def __str__(self):
@@ -19,7 +23,7 @@ class BaseProduct(ABC):
     def price(self):
         """float: Возвращает текущую цену продукта."""
         return self.__price
-    
+
     @price.setter
     def price(self, price):
         """Устанавливает новую цену продукта.
@@ -44,10 +48,12 @@ class BaseProduct(ABC):
                     break
         self.__price = price
 
-class InfoMixin():
+
+class InfoMixin:
     def __init__(self):
-        print(f"{self.__class__.__name__}('{self.name}', '{self.description}', '{self.price}', '{self.quantity}')")
-    
+        print(
+            f"{self.__class__.__name__}('{self.name}', '{self.description}', '{self.price}', '{self.quantity}')"
+        )
 
 
 class Product(BaseProduct, InfoMixin):
@@ -62,9 +68,9 @@ class Product(BaseProduct, InfoMixin):
         quantity (int): Количество продукта на складе.
         color (str): Цвет продукта(необязателен).
     """
+
     description: str
     color: str | None
-
 
     def __init__(
         self,
@@ -83,12 +89,11 @@ class Product(BaseProduct, InfoMixin):
             quantity (int): Количество продукта на складе.
             color (str | None): Цвет продукта.
         """
- 
+
         super().__init__(name, price, quantity)
         self.description = description
         self.color = color
         InfoMixin.__init__(self)
-
 
     def __add__(self, addend):
         if type(self) is not type(addend):
@@ -97,7 +102,6 @@ class Product(BaseProduct, InfoMixin):
         if total % 1 == 0:
             return int(total)
         return total
-
 
     @classmethod
     def new_product(
@@ -165,7 +169,8 @@ class LawnGrass(Product):
         self.country = country
         self.germination_period = germination_period
 
-class BaseCategory(ABC): 
+
+class BaseCategory(ABC):
     @abstractmethod
     def __str__(self):
         pass
@@ -173,6 +178,17 @@ class BaseCategory(ABC):
     @abstractmethod
     def summ(self):
         pass
+
+
+class CategoryException(Exception):
+    def __init__(self, *args, **kwargs):
+        self.message = (
+            args[0] if args else "Невозможно добавить товар с нулевым количеством!"
+        )
+
+    def __str__(self):
+        return self.message
+
 
 class Category(BaseCategory):
     name: str
@@ -182,21 +198,45 @@ class Category(BaseCategory):
     product_count = 0
 
     def __init__(self, name: str, description: str, products: list[Product]):
+        self.check_for_errors(products)
         self.name = name
         self.__products = products
         self.description = description
         Category.category_count += 1
         Category.product_count += len(products)
 
+    def check_for_errors(self, products):
+        try:
+            for product in products:
+                if product.quantity <= 0:
+                    raise CategoryException
+        except CategoryException:
+            print(CategoryException())
+            print("Процесс прерван.")
+            raise
+        else:
+            print("Товар успешно добавлен.")
+        finally:
+            print("Обработка добавления товара завершена.")
+
     @property
     def products(self):
         return "".join(str(product) for product in self.__products)
- 
+
     def __str__(self):
         total = 0
         for product in self.__products:
             total += product.quantity
         return f"{self.name}, количество продуктов: {total} шт."
+
+    def middle_price(self):
+        try:
+            total_price = sum(product.price for product in self.__products) / len(
+                self.__products
+            )
+        except ZeroDivisionError:
+            return 0
+        return round(total_price, 4)
 
     def summ(self):
         total = 0
@@ -207,6 +247,18 @@ class Category(BaseCategory):
     def add_product(self, product):
         if not isinstance(product, Product):
             raise TypeError("Объект не является классом Product")
+        try:
+            if product.quantity <= 0:
+                raise CategoryException
+        except CategoryException:
+            print(CategoryException())
+            print("Процесс прерван.")
+            raise
+        else:
+            print("Товар успешно добавлен.")
+        finally:
+            print("Обработка добавления товара завершена.")
+
         Category.product_count += 1
         self.__products.append(product)
 
@@ -217,9 +269,20 @@ class Order(BaseCategory):
     product: Product
 
     def __init__(self, product, quantity):
-        self.product = product
-        self.quantity = quantity
-    
+        try:
+            if quantity <= 0 or product.quantity <= 0:
+                raise CategoryException
+            self.quantity = quantity
+            self.product = product
+        except CategoryException:
+            print(str(CategoryException()))
+            print("Процесс прерван.")
+            raise
+        else:
+            print("Товар успешно добавлен!")
+        finally:
+            print("Обработка добавления товара завершена.")
+
     @property
     def amount(self):
         return self.summ()
@@ -229,6 +292,6 @@ class Order(BaseCategory):
         if amount % 1 == 0:
             return int(amount)
         return amount
-    
+
     def __str__(self):
-        return f'{self.product.name}, Цена: {self.product.price}, Сумма: {self.summ()}'
+        return f"{self.product.name}, Цена: {self.product.price}, Сумма: {self.summ()}"
